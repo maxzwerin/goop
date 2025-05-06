@@ -19,10 +19,11 @@ void screen() {
 
 
 typedef struct {
-    double x,y, w,h;
+    double x[4],y[4]; 
+    double w,h;
 } Rec;
 
-Rec rects[MAX_RECS];
+Rec rec[MAX_RECS];
 int count = 0;
 
 void snap_to_grid(double *x, double *y) {
@@ -31,7 +32,7 @@ void snap_to_grid(double *x, double *y) {
 }
 
 void draw_rectangle(Rec r) {
-    G_fill_rectangle(r.x, r.y, r.w, r.h);
+    G_fill_rectangle(r.x[0],r.y[0], r.w,r.h);
 }
 
 void draw_grid() {
@@ -50,7 +51,7 @@ void draw_all() {
     draw_grid();
     Gi_rgb(0,155,155);
     for (int i = 0; i < count; i++) {
-        draw_rectangle(rects[i]);
+        draw_rectangle(rec[i]);
     }
     G_display_image();
 }
@@ -84,8 +85,12 @@ void wait_click_lines(double x[], double y[], int n) {
     }
 }
 
-void convert_clicks_to_recs(double x[], double y[]) {
-    int i;
+int compare(const void* a, const void* b) {
+    return (*(double*)a - *(double*)b);
+}
+
+void convert_to_rec(double x[], double y[]) {
+    int i,n;
     double min_x = x[0], max_x = x[0];
     double min_y = y[0], max_y = y[0];
 
@@ -96,10 +101,13 @@ void convert_clicks_to_recs(double x[], double y[]) {
         if (y[i] > max_y) max_y = y[i];
     }
 
-    rects[count].x = min_x;
-    rects[count].y = min_y;
-    rects[count].w = max_x - min_x;
-    rects[count].h = max_y - min_y;
+    for (i = 0; i < 4; i++) {
+        rec[count].x[i] = x[i];
+        rec[count].y[i] = y[i];
+    }
+
+    rec[count].w = max_x - min_x;
+    rec[count].h = max_y - min_y;
 
     count++;
 }
@@ -108,7 +116,7 @@ void wait_and_click_rec() {
     double x[4], y[4];
     double p[2];
     int P[2];
-    int i;
+    int i,n;
 
     for (i = 0; i < 3; i++) {
         while (!G_no_wait_event(p)) {
@@ -133,7 +141,27 @@ void wait_and_click_rec() {
     }
 
     find_fourth_point(x,y);
-    convert_clicks_to_recs(x,y);
+
+    n = sizeof(x) / sizeof(x[0]);
+    qsort(x,n,sizeof(double),compare);
+    qsort(y,n,sizeof(double),compare);
+
+    convert_to_rec(x,y); // count++ here
+}
+
+
+void print_recs() {
+    int i,j;
+    printf("\n\nCOUNT: %d\n",count);
+    
+    for (i = 0; i < count; i++) {
+        printf("--- ");
+        for (j = 0; j < 4; j++) {
+            if (j < 3) printf("{ %4.0lf, %4.0lf }, ",rec[i].x[j],rec[i].y[j]);
+            else printf("{ %4.0lf, %4.0lf }\n",rec[i].x[j],rec[i].y[j]);
+        }
+        printf("+++ { WIDTH = %4.0lf , HEIGHT = %4.0lf }\n\n",rec[i].w,rec[i].h);
+    }
 }
 
 
@@ -148,7 +176,7 @@ int main() {
         key = G_wait_event(p);
         
         if (key == 'a') wait_and_click_rec();
-        if (key == 's') exit(0); // TODO: add save function
+        if (key == 's') print_recs();
         if (key == 'q') break;
         if (key == 0)   i = 0; // TODO: has rec been clicked, return ID 
     }
