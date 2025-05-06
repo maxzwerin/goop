@@ -3,8 +3,20 @@
 #define MAX_RECS 1000
 #define GRID_SIZE 20
 
-int WIN_X = 800;
-int WIN_Y = 800;
+int WIN_X;
+int WIN_Y;
+
+void screen() {
+    int real[2];
+    int actual[2] = { 1 };
+    int buffer = 50;
+    G_get_max_screen(&real[0],&real[1]);
+    real[0] -= buffer; real[1] -= buffer;
+    WIN_X = real[0];
+    WIN_Y = real[1];
+    Resize_window_X(real,actual);
+}
+
 
 typedef struct {
     double x,y, w,h;
@@ -23,7 +35,7 @@ void draw_rectangle(Rec r) {
 }
 
 void draw_grid() {
-    Gi_rgb(0,50,100);
+    Gi_rgb(10,50,100);
     for (int i = 0; i <= WIN_X; i += GRID_SIZE) {
         G_line(i, 0, i, WIN_Y);
     }
@@ -36,7 +48,7 @@ void draw_all() {
     Gi_rgb(0,0,0);
     G_clear();
     draw_grid();
-    Gi_rgb(55,125,100);
+    Gi_rgb(0,155,155);
     for (int i = 0; i < count; i++) {
         draw_rectangle(rects[i]);
     }
@@ -59,7 +71,6 @@ void find_fourth_point(double x[], double y[]) {
 }
 
 void wait_click_lines(double x[], double y[], int n) {
-    if (n <= 0) return;
     int i;
     Gi_rgb(255,255,255);
 
@@ -68,37 +79,13 @@ void wait_click_lines(double x[], double y[], int n) {
     }
 
     for (i = 0; i <= n; i++) {
-        G_circle(x[i], y[i], 5);
+        if (i == n) G_fill_circle(x[i],y[i], 5);
+        else G_circle(x[i],y[i], 5);
     }
 }
 
-void wait_and_click_rec() {
-    double x[4], y[4];
-    double p[2];
-    int P[2];
+void convert_clicks_to_recs(double x[], double y[]) {
     int i;
-
-    for (i = 0; i < 3; i++) {
-        while (!G_no_wait_event(p)) {
-            S_mouse_coord_window(P);
-            P[1] = WIN_Y - P[1];
-            x[i] = P[0]; y[i] = P[1];
-
-            draw_all();
-            wait_click_lines(x,y,i);
-            G_display_image();
-        }
-
-        snap_to_grid(&p[0],&p[1]);
-        draw_all();
-        x[i] = p[0];
-        y[i] = p[1];
-        wait_click_lines(x,y,i);
-        G_display_image();
-    }
-
-    find_fourth_point(x,y);
-
     double min_x = x[0], max_x = x[0];
     double min_y = y[0], max_y = y[0];
 
@@ -117,14 +104,55 @@ void wait_and_click_rec() {
     count++;
 }
 
+void wait_and_click_rec() {
+    double x[4], y[4];
+    double p[2];
+    int P[2];
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        while (!G_no_wait_event(p)) {
+            S_mouse_coord_window(P);
+            P[1] = WIN_Y - P[1]; // comes in upside-down
+            
+            x[i] = (double) P[0]; 
+            y[i] = (double) P[1];
+            snap_to_grid(&x[i],&y[i]);
+            
+            draw_all();
+            wait_click_lines(x,y,i);
+            G_display_image();
+        }
+
+        snap_to_grid(&p[0],&p[1]);
+        draw_all();
+        x[i] = p[0];
+        y[i] = p[1];
+        wait_click_lines(x,y,i);
+        G_display_image();
+    }
+
+    find_fourth_point(x,y);
+    convert_clicks_to_recs(x,y);
+}
+
 
 int main() {
-    G_init_graphics(WIN_X,WIN_Y);
-    draw_all();
-    wait_and_click_rec();
-    count = 1;
-    draw_all();
-    int key = G_wait_key();
+    int i, key;
+    double p[2];
+    G_init_graphics(1,1);
+    screen();
+    
+    while (1) {
+        draw_all();
+        key = G_wait_event(p);
+        
+        if (key == 'a') wait_and_click_rec();
+        if (key == 's') exit(0); // TODO: add save function
+        if (key == 'q') break;
+        if (key == 0)   i = 0; // TODO: has rec been clicked, return ID 
+    }
+    return 0;
 }
 
 
