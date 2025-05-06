@@ -105,6 +105,8 @@ void convert_to_rec(double x[], double y[]) {
         rec[count].x[i] = x[i];
         rec[count].y[i] = y[i];
     }
+    rec[count].y[1] = y[2]; 
+    rec[count].y[2] = y[1]; 
 
     rec[count].w = max_x - min_x;
     rec[count].h = max_y - min_y;
