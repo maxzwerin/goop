@@ -2375,6 +2375,23 @@ int G_wait_event(double p[2])
 
 
 
+int G_no_wait_event(double p[2]) {
+    int sig;
+    int pi[2];
+
+    sig = Gi_events(pi);
+
+    if (sig == -3) {
+        p[0] = pi[0];
+        p[1] = pi[1];
+        return 1;
+    }
+
+    return 0;
+}
+
+
+
 int G_key_down(int KeyCheck) {
     char KeyReturn[32];
     KeyCode code = XKeysymToKeycode(XxDisplay, KeyCheck);
