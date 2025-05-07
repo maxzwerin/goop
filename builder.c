@@ -1,4 +1,5 @@
 #include "FPToolkit.c"
+#include "rectangle.h"
 
 #define MAX_RECS 1000
 #define GRID_SIZE 20
@@ -16,12 +17,6 @@ void screen() {
     WIN_Y = real[1];
     Resize_window_X(real,actual);
 }
-
-
-typedef struct {
-    double x[4],y[4]; 
-    double w,h;
-} Rec;
 
 Rec rec[MAX_RECS];
 int count = 0;
